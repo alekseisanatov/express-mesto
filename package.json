@@ -1,0 +1,13 @@
+{
+  "name": "express-mesto",
+  "version": "1.0.0",
+  "author": "Aleksei-Sanatov",
+  "scripts": {
+    "lint": "npx eslint"
+  },
+  "dependencies": {
+    "eslint": "^7.31.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.23.4"
+  }
+}
