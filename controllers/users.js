@@ -14,7 +14,7 @@ module.exports.getUser = (req, res) => {
 };
 
 module.exports.getUserById = (req, res) => {
-  User.findById(req.params._id)
+  User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
@@ -49,7 +49,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUserInfo = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.params._id, { name, about }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.params.userId, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
@@ -71,7 +71,7 @@ module.exports.updateUserInfo = (req, res) => {
 module.exports.updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user.userId, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
