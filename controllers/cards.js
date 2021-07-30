@@ -2,6 +2,7 @@ const Card = require('../models/card');
 const {
   ERROR_CODE_WRONG_DATA,
   ERROR_CODE_DEFAULT,
+  ERROR_CODE_DATA_NOT_FOUND,
   VALIDATION_ERROR,
   VALIDATION_ID_ERROR,
 } = require('../error_codes');
@@ -27,7 +28,7 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.user._id)
+  Card.findByIdAndRemove(req.params._id)
     .then((card) => {
       if (!card) {
         const error = new Error('Нет карточки по заданному id'); error.statusCode = 404; throw error;
@@ -38,6 +39,9 @@ module.exports.deleteCard = (req, res) => {
     .catch((err) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка по указанному _id не найдена.' });
+      }
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет карточки по заданному id' });
       }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
@@ -60,6 +64,9 @@ module.exports.likeCard = (req, res) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка с указанным _id не найдена.' });
       }
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет карточки по заданному id' });
+      }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
 };
@@ -80,6 +87,9 @@ module.exports.dislikeCard = (req, res) => {
     .catch((err) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка с указанным _id не найдена.' });
+      }
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет карточки по заданному id' });
       }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });

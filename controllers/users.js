@@ -2,6 +2,7 @@ const User = require('../models/user');
 const {
   ERROR_CODE_WRONG_DATA,
   ERROR_CODE_DEFAULT,
+  ERROR_CODE_DATA_NOT_FOUND,
   VALIDATION_ERROR,
   VALIDATION_ID_ERROR,
 } = require('../error_codes');
@@ -13,7 +14,7 @@ module.exports.getUser = (req, res) => {
 };
 
 module.exports.getUserById = (req, res) => {
-  User.findById(req.user._id)
+  User.findById(req.params._id)
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
@@ -24,6 +25,9 @@ module.exports.getUserById = (req, res) => {
     .catch((err) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Пользователь по указанному _id не найден.' });
+      }
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
       }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
@@ -45,7 +49,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUserInfo = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about })
+  User.findByIdAndUpdate(req.params._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
@@ -57,8 +61,8 @@ module.exports.updateUserInfo = (req, res) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
       }
-      if (err.name === VALIDATION_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Пользователь с указанным _id не найден.' });
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
       }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
@@ -67,7 +71,7 @@ module.exports.updateUserInfo = (req, res) => {
 module.exports.updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { avatar })
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
@@ -79,8 +83,8 @@ module.exports.updateUserAvatar = (req, res) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
       }
-      if (err.name === VALIDATION_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Пользователь с указанным _id не найден.' });
+      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
+        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
       }
       return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
