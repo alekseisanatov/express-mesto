@@ -1,8 +1,11 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
+const NotFoundError = require('../errors/NotFoundError');
+const WrongData = require('../errors/WrongData');
+const WrongEmailError = require('../errors/WrongEmailError');
 const {
   ERROR_CODE_WRONG_DATA,
-  ERROR_CODE_DEFAULT,
-  ERROR_CODE_DATA_NOT_FOUND,
   VALIDATION_ERROR,
   VALIDATION_ID_ERROR,
 } = require('../error_codes');
@@ -10,49 +13,67 @@ const {
 module.exports.getUser = (req, res) => {
   User.find({})
     .then((user) => res.status(200).send(user))
-    .catch(() => res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' }));
+    .catch(next);
 };
 
 module.exports.getUserById = (req, res) => {
-  User.findById(req.params.userId)
+  User.findById(req.user._id)
     .then((user) => {
       if (!user) {
-        const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
+        throw new NotFoundError('Нет пользователя по заданному id');
       } else {
         res.status(200).send(user);
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Пользователь по указанному _id не найден.' });
-      }
-      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
-        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
-      }
-      return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
-    });
+    .catch(next);
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name = '',
+    about,
+    avatar,
+  } = req.body;
 
-  User.create({ name, about, avatar })
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email: req.body.email,
+      password: hash,
+    }))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === VALIDATION_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Переданы некорректные данные при создании пользователя.' });
+        throw new WrongData('Переданы некорректные данные при создании пользователя.');
+      } else if (err.name === 'MongoError' && err.code === 11000) {
+        throw new WrongEmailError('Пользователь с данной почтой уже существует');
+      } else {
+        next();
       }
-      return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, '61016079fc6bef0a856b1dcc', { expiresIn: '7d' }),
+      });
+    })
+    .catch(next);
 };
 
 module.exports.updateUserInfo = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.params.userId, { name, about }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
+        throw new NotFoundError('Нет пользователя по заданному id');
       } else {
         res.status(200).send(user);
       }
@@ -60,21 +81,19 @@ module.exports.updateUserInfo = (req, res) => {
     .catch((err) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
+      } else {
+        next();
       }
-      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
-        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
-      }
-      return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
     });
 };
 
 module.exports.updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  User.findByIdAndUpdate(req.user.userId, { avatar }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
-        const error = new Error('Нет пользователя по заданному id'); error.statusCode = 404; throw error;
+        throw new NotFoundError('Нет пользователя по заданному id');
       } else {
         res.status(200).send(user);
       }
@@ -83,9 +102,6 @@ module.exports.updateUserAvatar = (req, res) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
       }
-      if (err.statusCode === ERROR_CODE_DATA_NOT_FOUND) {
-        return res.status(404).send({ message: 'Нет пользователя по заданному id' });
-      }
-      return res.status(ERROR_CODE_DEFAULT).send({ message: 'Ошибка по умолчанию.' });
+      return next();
     });
 };
