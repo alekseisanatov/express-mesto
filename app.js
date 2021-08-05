@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { celebrate, Joi, errors } = require('celebrate');
 const { login, createUser } = require('./controllers/users');
 const auth = require('./middlewares/auth');
+const { NotFoundError } = require('./errors/NotFoundError');
 
 const app = express();
 const { PORT = 3000 } = process.env;
@@ -37,8 +38,8 @@ app.use('/users', require('./routes/users'));
 
 app.use('/cards', require('./routes/cards'));
 
-app.use((req, res) => {
-  res.status(404).send({ message: 'Вы перешли на несуществующий роут' });
+app.use(() => {
+  throw new NotFoundError('Вы перешли на несуществующий роут');
 });
 
 app.use(errors());
