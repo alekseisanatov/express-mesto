@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+const { NODE_ENV, JWT_SECRET } = process.env;
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const WrongData = require('../errors/WrongData');
@@ -8,15 +11,15 @@ const {
   ERROR_CODE_WRONG_DATA,
   VALIDATION_ERROR,
   VALIDATION_ID_ERROR,
-} = require('../error_codes');
+} = require('../errors/error_codes');
 
-module.exports.getUser = (req, res) => {
+module.exports.getUser = (req, res, next) => {
   User.find({})
     .then((user) => res.status(200).send(user))
     .catch(next);
 };
 
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
       if (!user) {
@@ -28,9 +31,9 @@ module.exports.getUserById = (req, res) => {
     .catch(next);
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
-    name = '',
+    name,
     about,
     avatar,
   } = req.body;
@@ -55,19 +58,19 @@ module.exports.createUser = (req, res) => {
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
       res.send({
-        token: jwt.sign({ _id: user._id }, '61016079fc6bef0a856b1dcc', { expiresIn: '7d' }),
+        token: jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' }),
       });
     })
     .catch(next);
 };
 
-module.exports.updateUserInfo = (req, res) => {
+module.exports.updateUserInfo = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
@@ -81,13 +84,12 @@ module.exports.updateUserInfo = (req, res) => {
     .catch((err) => {
       if (err.name === VALIDATION_ID_ERROR) {
         return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
-      } else {
-        next();
       }
+      return next();
     });
 };
 
-module.exports.updateUserAvatar = (req, res) => {
+module.exports.updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })

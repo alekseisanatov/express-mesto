@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const AuthError = require('../errors/AuthError');
+
+const validateUrl = function (url) {
+  const regex = /^(https?:\/\/)(www\.)?([\w-]{1, }\.[\w-]{1, })[^\s@]*$/gim;
+  return regex.test(url);
+};
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -28,17 +34,12 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    validate: {
-      validator: function (v) {
-        return /\^(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*/gmx.test(v);
-      },
-      message: props => `${props.value} is not a valid link`
-    },
+    validate: [validateUrl, 'Неправильная ссылка'],
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
 });
 
-userSchema.statics.findUserByCredentials = function (email, password) {
+userSchema.statics.findUserByCredentials = function (email, password, next) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
@@ -52,7 +53,7 @@ userSchema.statics.findUserByCredentials = function (email, password) {
           return user;
         })
         .catch(next);
-    })
+    });
 };
 
 module.exports = mongoose.model('user', userSchema);

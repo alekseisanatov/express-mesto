@@ -5,16 +5,16 @@ const {
   ERROR_CODE_WRONG_DATA,
   VALIDATION_ERROR,
   VALIDATION_ID_ERROR,
-} = require('../error_codes');
+} = require('../errors/error_codes');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .populate('card')
     .then((cards) => res.status(200).send(cards))
     .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Card.create({ name, link, owner: req.user._id })
@@ -28,7 +28,7 @@ module.exports.createCard = (req, res) => {
     });
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.user._id)
     .then((card) => {
       if (!card) {
@@ -45,7 +45,7 @@ module.exports.deleteCard = (req, res) => {
     });
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.user._id,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
@@ -66,7 +66,7 @@ module.exports.likeCard = (req, res) => {
     });
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.user._id,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
