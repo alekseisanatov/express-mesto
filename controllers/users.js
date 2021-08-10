@@ -51,9 +51,7 @@ module.exports.createUser = (req, res, next) => {
       if (err.name === VALIDATION_ERROR) {
         throw new WrongData('Переданы некорректные данные при создании пользователя.');
       } else if (err.name === 'MongoError' && err.code === 11000) {
-        throw new WrongEmailError('Пользователь с данной почтой уже существует');
-      } else {
-        next();
+        next(new WrongEmailError('Пользователь с данной почтой уже существует'));
       }
     });
 };

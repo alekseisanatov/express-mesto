@@ -7,12 +7,18 @@ const validateUrl = function (url) {
   return regex.test(url);
 };
 
+const validateEmail = function (email) {
+  const regex = /^([A-Za-z0-9_\-.])+@([A-Za-z0-9_\-.])+\.([A-Za-z]{2,4})$/;
+  return regex.test(email);
+};
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
     minlength: 2,
     required: true,
     unique: true,
+    validate: [validateEmail, 'Неправильная почта'],
   },
   password: {
     type: String,
@@ -54,6 +60,12 @@ userSchema.statics.findUserByCredentials = function (email, password, next) {
         })
         .catch(next);
     });
+};
+
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
 };
 
 module.exports = mongoose.model('user', userSchema);

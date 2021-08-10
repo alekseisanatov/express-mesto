@@ -19,7 +19,7 @@ app.use(express.json());
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
-    email: Joi.string().min(2).required(),
+    email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
   }),
 }), login);
@@ -28,7 +28,7 @@ app.post('/signup', celebrate({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
     avatar: Joi.string(),
-    email: Joi.string().min(2).required(),
+    email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
   }),
 }), createUser);
