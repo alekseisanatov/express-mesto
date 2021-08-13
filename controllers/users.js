@@ -8,11 +8,6 @@ const NotFoundError = require('../errors/NotFoundError');
 const WrongData = require('../errors/WrongData');
 const WrongEmailError = require('../errors/WrongEmailError');
 const AuthError = require('../errors/AuthError');
-const {
-  ERROR_CODE_WRONG_DATA,
-  VALIDATION_ERROR,
-  VALIDATION_ID_ERROR,
-} = require('../errors/error_codes');
 
 module.exports.getUser = (req, res, next) => {
   User.find({})
@@ -34,14 +29,8 @@ module.exports.getCurrentUser = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
-    .then((user) => {
-      if (!user) {
-        next(new NotFoundError('Нет пользователя по заданному id'));
-      } else {
-        res.status(200).send(user);
-      }
-    })
-    .catch(next);
+    .then((user) => res.status(200).send(user))
+    .catch(() => next(new NotFoundError('Нет пользователя по заданному id')));
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -67,10 +56,8 @@ module.exports.createUser = (req, res, next) => {
           }))
           .then((userData) => res.status(201).send({ userData: userData.toJSON() }))
           .catch((err) => {
-            if (err.name === VALIDATION_ERROR) {
-              next(new WrongData('Переданы некорректные данные при создании пользователя.'));
-            } else if (err.name === 'MongoError' && err.code === 11000) {
-              next();
+            if (err.name === 'MongoError' && err.code === 11000) {
+              next(new WrongEmailError('Пользователь с данной почтой уже существует'));
             }
           });
       }
@@ -92,9 +79,7 @@ module.exports.login = (req, res, next) => {
         .status(200)
         .send({ message: 'jwt создан' });
     })
-    .catch(() => {
-      next(new AuthError('Такого пользователя нет'));
-    });
+    .catch(() => next(new AuthError('Такого пользователя нет')));
 };
 
 module.exports.updateUserInfo = (req, res, next) => {
@@ -108,12 +93,7 @@ module.exports.updateUserInfo = (req, res, next) => {
         res.status(200).send(user);
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
-      }
-      return next();
-    });
+    .catch(() => next(new WrongData('Невалидный id')));
 };
 
 module.exports.updateUserAvatar = (req, res, next) => {
@@ -127,10 +107,5 @@ module.exports.updateUserAvatar = (req, res, next) => {
         res.status(200).send(user);
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Невалидный id' });
-      }
-      return next();
-    });
+    .catch(() => next(new WrongData('Невалидный id')));
 };

@@ -2,11 +2,6 @@ const Card = require('../models/card');
 const NotFoundError = require('../errors/NotFoundError');
 const WrongData = require('../errors/WrongData');
 const AccessingError = require('../errors/AccessingError');
-const {
-  ERROR_CODE_WRONG_DATA,
-  VALIDATION_ERROR,
-  VALIDATION_ID_ERROR,
-} = require('../errors/error_codes');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -20,13 +15,7 @@ module.exports.createCard = (req, res, next) => {
 
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(200).send(card))
-    .catch((err) => {
-      if (err.name === VALIDATION_ERROR) {
-        next(new WrongData('Переданы некорректные данные при создании карточки.'));
-      } else {
-        next();
-      }
-    });
+    .catch(() => next(new WrongData('Переданы некорректные данные при создании карточки.')));
 };
 
 module.exports.deleteCard = (req, res, next) => {
@@ -57,12 +46,7 @@ module.exports.likeCard = (req, res, next) => {
         res.status(200).send(card);
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка по указанному _id не найдена.' });
-      }
-      return next();
-    });
+    .catch(() => next(new NotFoundError('Нет карточки по заданному id')));
 };
 
 module.exports.dislikeCard = (req, res, next) => {
@@ -78,10 +62,5 @@ module.exports.dislikeCard = (req, res, next) => {
         res.status(200).send(card);
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка по указанному _id не найдена.' });
-      }
-      return next();
-    });
+    .catch(() => next(new NotFoundError('Нет карточки по заданному id')));
 };
