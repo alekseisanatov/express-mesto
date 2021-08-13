@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const validateUrl = function (url) {
-  const regex = /^(https?:\/\/)(www\.)?([\w-]{1, }\.[\w-]{1, })[^\s@]*$/gim;
+  // eslint-disable-next-line
+  const regex = /(https?:\/\/)(www\.)?([\w\-_]{1,})\.([\w\-.?=&,;\/@*+:]{1,})/;
   return regex.test(url);
 };
 

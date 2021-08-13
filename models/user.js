@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const AuthError = require('../errors/AuthError');
 
 const validateUrl = function (url) {
-  const regex = /^(https?:\/\/)(www\.)?([\w-]{1, }\.[\w-]{1, })[^\s@]*$/gim;
+  // eslint-disable-next-line
+  const regex = /(https?:\/\/)(www\.)?([\w\-_]{1,})\.([\w\-.?=&,;\/@*+:]{1,})/;
   return regex.test(url);
 };
 
@@ -22,7 +23,6 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    minlength: 8,
     required: true,
     select: false,
   },
@@ -49,23 +49,24 @@ userSchema.statics.findUserByCredentials = function (email, password, next) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        throw new AuthError('Неправильные почта или пароль');
+        next(new AuthError('Неправильные почта или пароль'));
       }
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            throw new AuthError('Неправильные почта или пароль');
+            next(new AuthError('Неправильные почта или пароль'));
           }
           return user;
-        })
-        .catch(next);
+        });
     });
 };
 
-userSchema.methods.toJSON = function () {
+function toJSON() {
   const obj = this.toObject();
   delete obj.password;
   return obj;
-};
+}
+
+userSchema.methods.toJSON = toJSON;
 
 module.exports = mongoose.model('user', userSchema);

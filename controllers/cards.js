@@ -1,6 +1,7 @@
 const Card = require('../models/card');
 const NotFoundError = require('../errors/NotFoundError');
 const WrongData = require('../errors/WrongData');
+const AccessingError = require('../errors/AccessingError');
 const {
   ERROR_CODE_WRONG_DATA,
   VALIDATION_ERROR,
@@ -21,7 +22,7 @@ module.exports.createCard = (req, res, next) => {
     .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === VALIDATION_ERROR) {
-        throw new WrongData('Переданы некорректные данные при создании пользователя.');
+        next(new WrongData('Переданы некорректные данные при создании карточки.'));
       } else {
         next();
       }
@@ -29,31 +30,29 @@ module.exports.createCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.user._id)
+  Card.findById(req.params.cardId)
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Нет карточки по заданному id');
+      if (card.owner.toString() === req.user._id) {
+        card
+          .delete()
+          .then((data) => res.send(data))
+          .catch(() => next());
       } else {
-        res.status(200).send(card);
+        next(new AccessingError('Нет прав на удаление карточки'));
       }
     })
-    .catch((err) => {
-      if (err.name === VALIDATION_ID_ERROR) {
-        return res.status(ERROR_CODE_WRONG_DATA).send({ message: 'Карточка по указанному _id не найдена.' });
-      }
-      return next();
-    });
+    .catch(() => next(new NotFoundError('Нет карточки по заданному id')));
 };
 
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
-    req.user._id,
+    req.params.cardId,
     { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
     { new: true },
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Нет карточки по заданному id');
+        next(new NotFoundError('Нет карточки по заданному id'));
       } else {
         res.status(200).send(card);
       }
@@ -68,13 +67,13 @@ module.exports.likeCard = (req, res, next) => {
 
 module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
-    req.user._id,
+    req.params.cardId,
     { $pull: { likes: req.user._id } }, // убрать _id из массива
     { new: true },
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError('Нет карточки по заданному id');
+        next(new NotFoundError('Нет карточки по заданному id'));
       } else {
         res.status(200).send(card);
       }
