@@ -6,6 +6,7 @@ const { celebrate, Joi, errors } = require('celebrate');
 const { login, createUser } = require('./controllers/users');
 const auth = require('./middlewares/auth');
 const NotFoundError = require('./errors/NotFoundError');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const app = express();
 const { PORT = 3000 } = process.env;
@@ -26,6 +27,7 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(requestLogger); // подключаем логгер запросов
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -51,6 +53,7 @@ app.use('/cards', require('./routes/cards'));
 app.use((req, res, next) => {
   next(new NotFoundError('Вы перешли на несуществующий роут'));
 });
+app.use(errorLogger); // подключаем логгер ошибок
 
 app.use(errors());
 app.use((err, req, res, next) => {
